@@ -1,5 +1,4 @@
-# Kahoot Bot v3.14 — modo VS Code
-
+# Kahoot Bot v3.14 
 > **⚡ Para ficar rápido (recomendado): use a Groq, grátis**
 > 1. Crie uma conta em **https://console.groq.com/keys** e clique em **Create API Key** (grátis, sem cartão).
 > 2. Ao apertar Ctrl+Shift+B, o bot pede **primeiro a chave da Groq** e depois a do Gemini (Enter pula qualquer uma). Ou salve as chaves em `chave-groq.txt` e `chave-gemini.txt` na pasta do projeto.
