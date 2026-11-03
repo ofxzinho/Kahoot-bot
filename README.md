@@ -1,4 +1,5 @@
-# Kahoot Bot v3.14 
+# Kahoot Bot v3.17 — modo VS Code
+
 > **⚡ Para ficar rápido (recomendado): use a Groq, grátis**
 > 1. Crie uma conta em **https://console.groq.com/keys** e clique em **Create API Key** (grátis, sem cartão).
 > 2. Ao apertar Ctrl+Shift+B, o bot pede **primeiro a chave da Groq** e depois a do Gemini (Enter pula qualquer uma). Ou salve as chaves em `chave-groq.txt` e `chave-gemini.txt` na pasta do projeto.
@@ -20,7 +21,13 @@
 >     - Um modelo que enxerga só **transcreve** o texto/código da imagem: Gemini 3.1-lite → 3.5-lite → 3.6, ou o modelo de visão da Groq, se estiver liberado na sua conta.
 >     - A **Groq resolve** com o código em texto, com raciocínio `medium`.
 >     - Se a transcrição não sair em `prazoTranscricaoMs` (3,2 s), vale o caminho anterior.
-> 11. Limite do plano grátis da Groq (out/2026): 30 pedidos por minuto e 1.000 por dia. Sobra para um Kahoot.
+> 11. **v3.15:**
+>     - Recorta só a imagem da pergunta para a transcrição.
+>     - Chama os 2 Gemini-lite **ao mesmo tempo** e usa a primeira transcrição que chegar.
+>     - Se não sair em 3,3 s, a Groq responde na hora. Tempo máximo esperado nas perguntas com imagem: ~4 s.
+> 12. **v3.16, múltipla seleção** ("Marcar todas as respostas plausíveis", "São duas respostas"): a IA devolve todas as corretas, respeitando a quantidade quando o enunciado diz; o bot marca cada uma e clica em Enviar.
+> 13. **v3.17, OCR LOCAL:** o texto/código das imagens é lido no próprio PC (Tesseract em WebAssembly, incluído em `bot/ocr`, sem instalar nada, sem internet, ~50–250 ms). A Groq resolve com o código em texto. O Gemini só é usado se o OCR não conseguir ler (ex.: foto).
+> 14. Limite do plano grátis da Groq (out/2026): 30 pedidos por minuto e 1.000 por dia. Sobra para um Kahoot.
 
 > **Novidades da v3.3**
 > - **Escolha pelo texto:** a IA recebe as alternativas numeradas (1, 2, 3, 4) e escolhe pelo texto; o bot clica na que tem aquele texto. A cor serve só para achar as caixas, e o bot pega todas do grupo, mesmo se uma cor não for reconhecida ou entrar atrasada.

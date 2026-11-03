@@ -16,6 +16,8 @@
     'mesmo que existam exceções técnicas. Não procure casos extremos nem pegadinhas que o enunciado não pede.',
     'Em Verdadeiro/Falso, julgue pela regra geral ensinada (ex.: "lista ordenada permite busca binária" = Verdadeiro).',
     'Em "quando X é melhor que Y", prefira a situação clássica dos livros (ex.: busca linear é melhor com poucos elementos).',
+    'Use a terminologia clássica de Estruturas de Dados: FILA = enqueue/dequeue ("Deque"/"Desenfileirar" remove da fila; pop NÃO é de fila),',
+    'PILHA = push/pop/peek (LIFO), FILA = FIFO.',
     'Atenção a negações (NÃO, EXCETO, INCORRETA, FALSA) no enunciado.',
     'Se não tiver certeza, escolha a alternativa mais provável. Nunca deixe sem resposta.',
     'Responda somente com o JSON pedido.',
@@ -29,7 +31,7 @@
   //  - com texto: id = "1".."n" e a IA escolhe PELO TEXTO (a cor não importa)
   //  - sem texto (só formas na tela): id = cor e a IA lê o print
   function idDe(a) { return a.id || a.cor; }
-  function montarPedido({ imagemBase64, alternativas, textoTela, nivel }) {
+  function montarPedido({ imagemBase64, alternativas, textoTela, nivel, multi }) {
     const ids = alternativas.map(idDe);
     const porTexto = alternativas.every(a => a.texto);
     const linhas = alternativas.map(a => porTexto
@@ -38,10 +40,14 @@
     const texto = [
       textoTela ? `Texto da tela (pergunta):\n"""\n${textoTela}\n"""` : 'Não foi possível ler o texto da página; leia tudo no print.',
       '',
+      'LEMBRE: é quiz de aula — escolha a resposta que o PROFESSOR espera (regra geral do livro, sem caçar exceções). Fila remove com dequeue/Deque; pilha com pop. "Lista ordenada permite busca binária" é VERDADEIRO.',
+      '',
       porTexto ? 'Alternativas:' : 'Alternativas (identificadas pela cor da caixa):',
       ...linhas,
       '',
-      porTexto ? `Responda com o NÚMERO da alternativa correta (${ids.join(', ')}).` : `Responda com a cor da caixa correta (${ids.join(', ')}).`,
+      multi
+        ? `ATENÇÃO: esta pergunta aceita MAIS DE UMA resposta ("marcar todas"). Responda com TODAS as corretas (${porTexto ? 'números' : 'cores'}: ${ids.join(', ')}). Se o enunciado disser quantas são, marque exatamente essa quantidade.`
+        : (porTexto ? `Responda com o NÚMERO da alternativa correta (${ids.join(', ')}).` : `Responda com a cor da caixa correta (${ids.join(', ')}).`),
     ].join('\n');
 
     const partes = [];
@@ -50,14 +56,23 @@
 
     const generationConfig = {
       responseMimeType: 'application/json',
-      responseJsonSchema: {
-        type: 'object',
-        properties: { resposta: { type: 'string', enum: ids } },
-        required: ['resposta'],
-      },
+      responseJsonSchema: multi
+        ? { type: 'object', properties: { respostas: { type: 'array', items: { type: 'string', enum: ids }, minItems: 1 } }, required: ['respostas'] }
+        : { type: 'object', properties: { resposta: { type: 'string', enum: ids } }, required: ['resposta'] },
     };
     if (nivel) generationConfig.thinkingConfig = { thinkingLevel: String(nivel).toUpperCase() };
     return { systemInstruction: { parts: [{ text: INSTRUCAO }] }, contents: [{ role: 'user', parts: partes }], generationConfig };
+  }
+
+  function lerMulti(json, ids) {
+    const cand = json && (json.candidates || [])[0];
+    const texto = ((cand && cand.content && cand.content.parts) || []).filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('').trim();
+    let lista = [];
+    try { const o = JSON.parse(texto); lista = (o.respostas || o.resposta || o).toString().split(',').map(x => x.trim()); }
+    catch (_) { lista = ids.filter(id => new RegExp(`(^|[^\\w])${id}([^\\w]|$)`, 'i').test(texto)); }
+    lista = [...new Set(lista.map(x => String(x).toLowerCase()))].filter(x => ids.includes(x));
+    if (!lista.length) throw new ErroIA(`Resposta sem alternativas válidas: ${texto.slice(0, 60)}`, 'invalida');
+    return lista;
   }
 
   // Transcrição: um modelo que enxerga só COPIA o texto/código da imagem; quem resolve é a Groq.
@@ -186,7 +201,8 @@
     const usuario = (((corpo.contents || [])[0] || {}).parts || []).filter(p => typeof p.text === 'string').map(p => p.text).join('\n');
     const props = (corpo.generationConfig && corpo.generationConfig.responseJsonSchema && corpo.generationConfig.responseJsonSchema.properties) || {};
     let formato = '';
-    if (props.resposta) formato = `\n\nResponda SOMENTE com JSON no formato {"resposta": "X"}, onde X é um destes: ${props.resposta.enum.join(', ')}.`;
+    if (props.respostas) formato = `\n\nResponda SOMENTE com JSON no formato {"respostas": ["X", ...]} com TODAS as corretas, usando estes: ${props.respostas.items.enum.join(', ')}.`;
+    else if (props.resposta) formato = `\n\nResponda SOMENTE com JSON no formato {"resposta": "X"}, onde X é um destes: ${props.resposta.enum.join(', ')}.`;
     else if (props.valor) formato = '\n\nResponda SOMENTE com JSON no formato {"valor": N}, onde N é o número.';
     else if (props.ordem) formato = `\n\nResponda SOMENTE com JSON no formato {"ordem": ["…"]}, usando cada um destes uma vez: ${props.ordem.items.enum.join(', ')}.`;
     const img = ((((corpo.contents || [])[0] || {}).parts) || []).find(p => p.inlineData);
@@ -369,7 +385,7 @@
     // Uma chamada por pergunta. Se ela demorar mais que reforcoMs (ou falhar), chama o próximo modelo EM PARALELO
     // e fica com a primeira resposta válida. Assim só gasta mais requisições quando a IA está lenta.
     // Pergunta com imagem: Gemini (enxerga) e Groq (só texto, rápida) juntos; vale o Gemini se chegar até o prazo.
-    function responder({ montarCorpo, cores, decorridoMs, ler, temImagem, nivelGroq, apenasVisao }) {
+    function responder({ montarCorpo, cores, decorridoMs, ler, temImagem, nivelGroq, apenasVisao, juntos }) {
       const chamar = (modelo, nivel) => { const s = porNome(modelo); const c = ctx(s); if (nivelGroq && s.provedor === 'groq') c.nivel = nivelGroq;
         return chamarModelo(Object.assign(c, { modelo, corpo: montarCorpo(s.provedor === 'groq' ? '' : nivel), cores, ler, timeoutMs: op.timeoutMs })); };
       // (no aquecimento, modelos de visão da Groq também são testados só com texto)
@@ -403,6 +419,7 @@
           const reforcar = () => { if (fim) return; lancar(); if (idx < candidatos.length) timer = setTimeout(reforcar, reforcoMs); };
           lancar();
           if (op.usarCorrida === true) lancar();
+          for (let i = 1; i < (juntos || 1); i++) lancar();
           if (idx < candidatos.length) timer = setTimeout(reforcar, reforcoMs);
         });
       }
@@ -433,7 +450,7 @@
     return { aquecer, responder, escolher, marcar, resumo, saude };
   }
 
-  const api = { API_PADRAO, GROQ_API, INSTRUCAO, ErroIA, paraGroq, deGroq, montarPedido, lerResposta, descreverErroHttp, chamarModelo, corrida, aquecerModelo, normalizarModelos, criarGerenciador, montarPedidoNumero, lerNumero, montarPedidoOrdem, lerOrdem, montarPedidoTranscricao, lerTexto };
+  const api = { API_PADRAO, GROQ_API, INSTRUCAO, ErroIA, paraGroq, deGroq, montarPedido, lerResposta, descreverErroHttp, chamarModelo, corrida, aquecerModelo, normalizarModelos, criarGerenciador, montarPedidoNumero, lerNumero, montarPedidoOrdem, lerOrdem, montarPedidoTranscricao, lerTexto, lerMulti };
   raiz.KBGemini = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof self !== 'undefined' ? self : globalThis);

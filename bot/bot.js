@@ -7,6 +7,7 @@ const { CDP } = require('./cdp');
 const { acharNavegador, abrirNavegador } = require('./navegador');
 const { RAIZ, lerConfig, obterChaves } = require('./config');
 const G = require('../nucleo/gemini');
+const OCR = require('./ocr');
 
 const COR_TERM = { vermelho: '\x1b[41m', azul: '\x1b[44m', amarelo: '\x1b[43m\x1b[30m', verde: '\x1b[42m' };
 const R = '\x1b[0m', CINZA = '\x1b[90m', VERDE = '\x1b[32m', VERM = '\x1b[31m', NEG = '\x1b[1m';
@@ -64,6 +65,11 @@ async function principal() {
   };
   // aquece o Gemini enquanto o navegador abre (valida chave/modelos, mede o tempo e abre a conexão)
   const aquecimento = gerente.aquecer().then((r) => { mostrarSaude(r); return r; });
+
+  // OCR local (lê código/texto das imagens sem depender do Gemini) — carrega em segundo plano
+  const tOcr = Date.now();
+  OCR.iniciar().then(() => log(`${VERDE}✓${R} OCR local pronto (${Date.now() - tOcr} ms) — código em imagem é lido no próprio PC`),
+    (e) => log(`${VERM}✗ OCR local não carregou: ${e.message}${R} — imagens vão pro Gemini`));
 
   const { proc, url, perfil } = await abrirNavegador(exe);
   const cdp = await CDP.conectar(url);
@@ -159,23 +165,39 @@ async function principal() {
       case 'responder': {
         const cores = dados.alternativas.map(a => a.id || a.cor);
         let textoTela = dados.textoTela, temImagem = !!dados.imagem && !dados.ocr, nivelGroq = dados.ocr ? 'medium' : undefined, transcritoPor = '';
-        // Pergunta com imagem: um modelo que enxerga TRANSCREVE o código/texto da imagem e a Groq resolve (rápido e certeiro).
+        // 1º: OCR LOCAL da imagem da pergunta (instantâneo, sem internet). Bom para código, tabelas e textos.
+        if (temImagem && chaveGroq && (dados.recorte || dados.imagem)) {
+          try {
+            const t0 = Date.now();
+            const o = await Promise.race([OCR.ler(dados.recorte || dados.imagem), new Promise((_, rej) => setTimeout(() => rej(new Error('OCR demorou')), 1500))]);
+            const letras = (o.texto.match(/[A-Za-z0-9]/g) || []).length;
+            if (o.confianca >= 60 && letras >= 8) {
+              textoTela += `\n\nTEXTO/CÓDIGO DA IMAGEM DA PERGUNTA (lido por OCR; pode ter pequenos erros e a indentação pode ter se perdido):\n"""\n${o.texto.slice(0, 3000)}\n"""`;
+              temImagem = false; nivelGroq = 'medium'; transcritoPor = `OCR local ${Date.now() - t0} ms, confiança ${o.confianca}%`;
+            } else if (process.env.KB_DEBUG) log(`${CINZA}OCR fraco (confiança ${o.confianca}%, ${letras} caracteres) — tentando o Gemini${R}`);
+          } catch (e) { if (process.env.KB_DEBUG) log(`${CINZA}OCR falhou: ${e.message}${R}`); }
+        }
+        // 2º: se o OCR não serviu (ex.: foto), um modelo que enxerga TRANSCREVE a imagem e a Groq resolve.
         if (temImagem && chaveGroq) {
-          const limite = Math.max(800, (cfg.prazoTranscricaoMs || 3200) - (dados.decorridoMs || 0));
+          const limite = Math.max(800, (cfg.prazoTranscricaoMs || 3300) - (dados.decorridoMs || 0));
           try {
             const tr = await Promise.race([
-              gerente.responder({ montarCorpo: (nivel) => G.montarPedidoTranscricao({ imagemBase64: dados.imagem, nivel: '' }), ler: G.lerTexto, apenasVisao: true, decorridoMs: dados.decorridoMs || 0 }),
+              gerente.responder({ montarCorpo: (nivel) => G.montarPedidoTranscricao({ imagemBase64: dados.recorte || dados.imagem, nivel: '' }), ler: G.lerTexto, apenasVisao: true, juntos: 2, decorridoMs: dados.decorridoMs || 0 }),
               new Promise((_, rej) => setTimeout(() => rej(new Error('transcrição demorou')), limite)),
             ]);
             if (tr && typeof tr.cor === 'string' && tr.cor.length >= 5) {
               textoTela += `\n\nTEXTO/CÓDIGO DA IMAGEM DA PERGUNTA (transcrito):\n"""\n${tr.cor.slice(0, 3000)}\n"""`;
               temImagem = false; nivelGroq = 'medium'; transcritoPor = `${tr.modelo} ${tr.ms} ms`;
             }
-          } catch (e) { if (process.env.KB_DEBUG) log(`${CINZA}transcrição falhou: ${e.message}${R}`); }
+          } catch (e) {
+            // não deu tempo de ler a imagem: responde já com a Groq (não começa outra chamada lenta)
+            if (process.env.KB_DEBUG) log(`${CINZA}transcrição falhou: ${e.message}${R}`);
+            temImagem = false; transcritoPor = 'sem leitura da imagem (tempo)';
+          }
         }
-        const montarCorpo = (nivel) => G.montarPedido({ imagemBase64: dados.imagem, alternativas: dados.alternativas, textoTela, nivel });
+        const montarCorpo = (nivel) => G.montarPedido({ imagemBase64: dados.imagem, alternativas: dados.alternativas, textoTela, nivel, multi: !!dados.multi });
         try {
-          const r = await gerente.responder({ montarCorpo, cores, decorridoMs: dados.decorridoMs || 0, temImagem, nivelGroq });
+          const r = await gerente.responder({ montarCorpo, cores, decorridoMs: dados.decorridoMs || 0, temImagem, nivelGroq, ler: dados.multi ? (json) => G.lerMulti(json, cores) : undefined });
           return { ok: true, cor: r.cor, modelo: r.modelo, msIA: r.ms, detalhes: r.detalhes, transcritoPor };
         } catch (e) {
           return { ok: false, erro: e.message, detalhes: e.detalhes };
@@ -193,7 +215,7 @@ async function principal() {
           if (perg) log(`${CINZA}   ${perg}${R}`);
         } else if (d.ok) {
           const t = (d.msTotal / 1000).toFixed(2);
-          log(`${COR_TERM[d.cor] || ''} ${d.texto ? d.texto.slice(0, 50) : d.cor.toUpperCase()} ${R} ${NEG}${t}s${R} ${CINZA}(IA ${d.msIA} ms, ${d.modelo}${d.clicou ? '' : ', sem clique'}, ${d.cores.length} alternativas${d.comPrint ? ', com print' : ''}${d.ocr ? ', código lido por OCR' : ''}${d.transcritoPor ? `, imagem lida por ${d.transcritoPor}` : ''})${R}`);
+          log(`${COR_TERM[d.cor] || ''} ${d.texto ? d.texto.slice(0, 50) : d.cor.toUpperCase()} ${R} ${NEG}${t}s${R} ${CINZA}(IA ${d.msIA} ms, ${d.modelo}${d.clicou ? '' : ', sem clique'}, ${d.cores.length} alternativas${d.comPrint ? ', com print' : ''}${d.ocr ? ', código lido por OCR' : ''}${d.transcritoPor ? (d.transcritoPor.startsWith('sem') ? ', ⚠ imagem não lida a tempo (Groq só pelo texto)' : `, imagem lida por ${d.transcritoPor}`) : ''})${R}`);
           if (perg) log(`${CINZA}   ${perg}${R}`);
           if (d.lista) log(`${CINZA}   alternativas: ${d.lista.map((t, i) => `${i + 1}) ${String(t).slice(0, 25)}`).join(' · ')} → clicou na ${d.escolhaIdx}${d.pontoOk === false ? ` ${VERM}(⚠ ponto do clique fora da alternativa; sob o clique: "${(d.sobClique || '').slice(0, 25)}")` : ''}${R}`);
         } else {
@@ -291,6 +313,7 @@ async function principal() {
       const ts = ok.map(h => h.msTotal).sort((a, b) => a - b);
       log(`Resumo: ${ok.length} respondidas · mediana ${(ts[ts.length >> 1] / 1000).toFixed(2)}s · pior ${(ts[ts.length - 1] / 1000).toFixed(2)}s · histórico em resultados/`);
     }
+    OCR.encerrar();
     const fim = () => { try { fs.rmSync(perfil, { recursive: true, force: true }); } catch (_) {} process.exitCode = codigo; setTimeout(() => process.exit(codigo), 300).unref(); };
     if (proc.exitCode !== null) return fim();
     proc.once('exit', () => setTimeout(fim, 200));

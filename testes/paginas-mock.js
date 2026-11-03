@@ -39,6 +39,8 @@ const CENARIOS = {
     { texto: 'Resolva este código:', html: '<pre style="background:#f2f2f2;padding:12px;font-size:18px">pilha = [5, 10, 15, 20]\npilha.pop()\npilha.pop()\nprint(pilha)</pre>', alts: [['vermelho', '[10, 20]'], ['azul', '[5, 10]'], ['amarelo', '[15, 20]'], ['verde', '[5, 15]']], correta: 'azul' },
     { texto: 'Resolva este código:', html: '<pre style="background:#f2f2f2;padding:12px;font-size:18px">fila = [5, 10, 15, 20]\nfila.pop(0)\nprint(fila)</pre>', alts: [['vermelho', '[5, 10, 15]'], ['azul', '[10, 15, 20]'], ['amarelo', '[5, 10]'], ['verde', '[20]']], correta: 'azul' },
   ],
+  multi: [{ texto: 'Quais destas estruturas são lineares? (São duas respostas)', multi: true,
+    alts: [['vermelho', 'Árvore'], ['azul', 'Pilha'], ['amarelo', 'Grafo'], ['verde', 'Fila']], corretas: ['Pilha', 'Fila'], correta: 'multi' }],
   puzzle: [{ texto: 'Coloque o código na ordem correta da melhor forma, considerando um exercício de Ordem Binária.',
     puzzle: ['vetor = [5, 10, 15, 20, 25, 30, 35]', 'inicio = 0 fim = 6 meio = (inicio + fim) // 2', 'if vetor[meio] < 25: inicio = meio + 1', 'print(inicio)'],
     embaralhado: [1, 0, 2, 3], correta: 'ordem', alts: [] }],
@@ -172,6 +174,21 @@ async function rodar(){
       grade.appendChild(b);
     }
     document.querySelector('.tela').appendChild(grade);
+    if (q.multi) {
+      const info = document.createElement('div'); info.textContent = 'Marcar todas as respostas plausíveis'; info.style.cssText = 'text-align:center;background:#fff;margin:0 8px';
+      grade.before(info);
+      const env = document.createElement('button'); env.textContent = 'Enviar'; env.style.cssText = 'font-size:22px;padding:10px 30px;align-self:center;margin:6px';
+      grade.after(env);
+      const marcadas = new Set();
+      grade.addEventListener('click', e => { const b = e.target.closest('.resp'); if (!b) return; const t = b.textContent.trim(); marcadas.has(t) ? marcadas.delete(t) : marcadas.add(t); b.style.outline = marcadas.has(t) ? '4px solid #fff' : ''; }, true);
+      const t0m = performance.now();
+      relatar({ tipo:'mostrou', idx:i, correta:'multi', corretasTextos:q.corretas });
+      const res = await new Promise(res => { const lim = setTimeout(() => res(null), 15000); env.addEventListener('click', e => { clearTimeout(lim); res({ sel: [...marcadas].sort(), ms: Math.round(performance.now()-t0m), trusted: e.isTrusted }); }); });
+      relatar({ tipo:'saiu', idx:i });
+      if (res) relatar({ tipo:'clicou', idx:i, cor:'multi', sel: res.sel, correta:'multi', acertou: res.sel.join('|') === [...q.corretas].sort().join('|'), ms: res.ms, trusted: res.trusted }); else relatar({ tipo:'tempo', idx:i });
+      tela('roxo', '<div>Fim</div>'); await espera(800);
+      continue;
+    }
     const t0 = performance.now();
     relatar({ tipo:'mostrou', idx:i, correta:q.correta, corretaTexto:q.alts.find(a=>a[0]===q.correta)[1], cores:q.alts.map(a=>a[0]) });
     const clique = await new Promise(res => {

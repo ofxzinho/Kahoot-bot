@@ -160,6 +160,34 @@
       } catch (e) { dbg('OCR indisponível', e && e.message); return ''; }
     }
 
+    // Recorta do print só a(s) imagem(ns) da pergunta (acima das alternativas): mais nítido e mais leve para a IA ler.
+    async function recortarMidia(base64, alts) {
+      try {
+        const topo = alts.length ? Math.min(...alts.map(a => a.y)) : innerHeight;
+        const area = innerWidth * innerHeight;
+        const rs = [];
+        for (const el of document.querySelectorAll('img,canvas,picture,video')) {
+          const r = el.getBoundingClientRect();
+          if (r.width * r.height < area * 0.008 || r.width * r.height > area * 0.7 || r.bottom > topo + 2 || r.bottom <= 0) continue;
+          if (/logo|icon|icn_|avatar|emoji/i.test(el.currentSrc || el.src || el.className || '')) continue;
+          rs.push(r);
+        }
+        if (!rs.length) return null;
+        const bmp = await createImageBitmap(base64ParaBlob(base64));
+        const fx = bmp.width / innerWidth, fy = bmp.height / innerHeight, m = 8;
+        const x0 = Math.max(0, (Math.min(...rs.map(r => r.left)) - m) * fx), y0 = Math.max(0, (Math.min(...rs.map(r => r.top)) - m) * fy);
+        const x1 = Math.min(bmp.width, (Math.max(...rs.map(r => r.right)) + m) * fx), y1 = Math.min(bmp.height, (Math.max(...rs.map(r => r.bottom)) + m) * fy);
+        const w = x1 - x0, h = y1 - y0;
+        const esc = Math.min(2, 1280 / w);                         // amplia até 2x: o OCR lê melhor letra maior
+        const tela = new OffscreenCanvas(Math.round(w * esc), Math.round(h * esc));
+        tela.getContext('2d').drawImage(bmp, x0, y0, w, h, 0, 0, tela.width, tela.height);
+        bmp.close && bmp.close();
+        const u8 = new Uint8Array(await (await tela.convertToBlob({ type: 'image/jpeg', quality: 0.9 })).arrayBuffer());
+        let bin = ''; for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+        return btoa(bin);
+      } catch (e) { dbg('recorte falhou', e && e.message); return null; }
+    }
+
     async function escanearPrint() {
       const agora = performance.now();
       if (agora - est.ultimoPrint < (ponte.intervaloPrintMs || 1500)) return est.cachePrint;
@@ -344,6 +372,8 @@
       if (!alts) { est.fase = 'ocioso'; return; }
 
       const textos = alts.map(a => textoDe(a.alvo));
+      // múltipla seleção: "marcar todas as respostas…", "(são duas respostas)", com botão Enviar
+      const multi = !!botaoEnviar() && /marcar todas|marque todas|selecione todas|todas as (respostas|alternativas) (corretas|plaus)|mais de uma|s[aã]o (duas|tr[eê]s|quatro) respostas|select all|multiple (answers|correct)/i.test(textosVisiveis().map(x => x.t).join(' '));
       const semTexto = textos.some(t => !t);
       // com texto: a IA escolhe pelo número/texto (a cor não importa); sem texto: pela cor no print
       const alternativas = alts.map((a, i) => ({ id: semTexto ? a.cor : String(i + 1), cor: a.cor, texto: textos[i] }));
@@ -366,8 +396,8 @@
       if (precisaPrint) { try { cap = await ponte.pedir('capturar', { qualidade: 90 }); } catch (e) { dbg('falha no print', e.message); } }
       overlayOculto = false;
       overlay('Pensando…', `${alternativas.length} alternativas`, '#7a5cff');
-      let imagem = null, ocr = '';
-      if (cap && cap.ok) ocr = await lerImagensOCR(cap.base64, alts);
+      let imagem = null, ocr = '', recorte = null;
+      if (cap && cap.ok) [ocr, recorte] = await Promise.all([lerImagensOCR(cap.base64, alts), recortarMidia(cap.base64, alts)]);
       if (cap && cap.ok) {
         try { imagem = await reduzirImagem(cap.base64, ponte.larguraImagem || 1280, (ponte.qualidadeImagem || 80) / 100); }
         catch (e) { dbg('falha ao reduzir print', e.message); imagem = cap.base64; }
@@ -378,13 +408,35 @@
       let r;
       try {
         r = await ponte.pedir('responder', {
-          imagem, alternativas, decorridoMs: performance.now() - t0, ocr: ocr.length >= 15,
+          imagem, recorte, alternativas, multi, decorridoMs: performance.now() - t0, ocr: ocr.length >= 15,
           textoTela: ocr.length >= 15 ? `${tela}\n\nTEXTO DA IMAGEM (lido por OCR; pode ter pequenos erros de leitura):\n"""\n${ocr.slice(0, 2500)}\n"""` : tela,
         });
       } catch (e) { r = { ok: false, erro: String(e && e.message || e) }; }
 
       const registro = { quando: Date.now(), cores: alternativas.map(a => a.cor), pergunta: assinaturaAcima(alts).slice(0, 120) || linhaPergunta(tela), semTexto, viaPrint: est.viaPrint, comPrint: !!imagem, ocr: ocr.length >= 15, msPrint: Math.round(tPrint) };
-      if (r && r.ok) {
+      if (r && r.ok && Array.isArray(r.cor)) {
+        // várias corretas: marca cada uma e envia
+        est.corEscolhida = null;
+        const escolhidas = r.cor.map(id => alternativas.findIndex(a => a.id === id)).filter(i => i >= 0);
+        let marcou = 0;
+        if (est.cfg.cliqueAutomatico && est.cfg.ativo) {
+          for (const i of escolhidas) {
+            const a = alts[i]; if (!a || !a.alvo.isConnected) continue;
+            const pt = pontoDentro(a.alvo);
+            try { await ponte.clicar(a.alvo, pt.x, pt.y); marcou++; } catch (_) {}
+            await dormir(150);
+          }
+          await dormir(150);
+          const env = botaoEnviar();
+          if (env) { const rr = env.getBoundingClientRect(); try { await ponte.clicar(env, rr.left + rr.width / 2, rr.top + rr.height / 2); } catch (_) {} }
+        }
+        const total = (performance.now() - t0) / 1000;
+        const nomes = escolhidas.map(i => alternativas[i].texto || alternativas[i].cor);
+        overlay(`${nomes.join(' + ').slice(0, 60)} · ${total.toFixed(2)} s`, `${r.modelo} · ${escolhidas.length} marcadas`, '#2ecc71');
+        vigiarVeredito((acima || linhaPergunta(tela)).slice(0, 120), nomes.join(' + '));
+        Object.assign(registro, { ok: true, cor: 'multi', texto: nomes.join(' + '), modelo: r.modelo, msIA: r.msIA, msTotal: Math.round(total * 1000), clicou: marcou > 0,
+          lista: alternativas.map(a => a.texto || a.cor), escolhaIdx: escolhidas.map(i => i + 1).join('+'), transcritoPor: r.transcritoPor || '' });
+      } else if (r && r.ok) {
         const idx = alternativas.findIndex(a => a.id === r.cor);
         const alt = alternativas[idx] || {};
         r.cor = alt.cor || r.cor;

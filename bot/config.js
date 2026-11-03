@@ -11,12 +11,11 @@ const ARQ_CHAVE_GROQ = path.join(RAIZ, 'chave-groq.txt');
 const PADRAO = {
   modelos: [
     { provedor: 'groq', modelo: 'openai/gpt-oss-120b', nivel: 'medium' },
-    { provedor: 'groq', modelo: 'meta-llama/llama-4-scout-17b-16e-instruct', visao: true },
     { modelo: 'gemini-3.1-flash-lite', nivel: '' },
     { modelo: 'gemini-3.5-flash-lite', nivel: 'minimal' },
     { modelo: 'gemini-3.6-flash', nivel: 'low' },
   ],
-  usarCorrida: false, prazoMs: 2500, prazoImagemMs: 4000, prazoTranscricaoMs: 3200, timeoutMs: 15000, reforcoMs: 2500,
+  usarCorrida: false, prazoMs: 2500, prazoImagemMs: 4000, prazoTranscricaoMs: 3300, timeoutMs: 15000, reforcoMs: 2500,
   larguraImagem: 1280, qualidadeImagem: 80,
   cliqueAutomatico: true, mostrarOverlay: true,
   navegador: 'auto', urlInicial: 'https://kahoot.it/', sites: ['kahoot.it', 'create.kahoot.it'],

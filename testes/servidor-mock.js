@@ -57,7 +57,9 @@ function criarServidor() {
     if (comp.modo === '503') { await new Promise(r => setTimeout(r, ehAquecimento ? Math.min(comp.atraso, 200) : comp.atraso)); return json(res, 503, { error: { code: 503, message: 'This model is currently experiencing high demand.' } }); }
     await new Promise(r => setTimeout(r, ehAquecimento ? Math.min(comp.atraso, 200) : comp.atraso));
     if (/Transcreva EXATAMENTE/.test(texto)) {
-      await new Promise(r => setTimeout(r, 0));
+      const cT = Object.assign({}, estado.padrao, estado.modelos[modelo] || {});
+      if (cT.modo === 'travar') return;
+      await new Promise(r => setTimeout(r, cT.atraso));
       return json(res, 200, { candidates: [{ content: { parts: [{ text: 'let x = null;\nconsole.log(typeof x);' }] }, finishReason: 'STOP' }] });
     }
     if (ehAquecimento) {
@@ -103,7 +105,10 @@ function criarServidor() {
       await new Promise(r => setTimeout(r, comp.atraso));
       if (comp.modo === '503') return json(res, 503, { error: { message: 'over capacity' } });
       let resposta = 'ok';
-      if (/"ordem"/.test(usuario) && estado.corretaOrdem) {
+      if (/"respostas"/.test(usuario) && estado.corretasTextos) {
+        const linhas = usuario.split('\n').map(x => x.match(/^(\d+)\) (.*)$/)).filter(Boolean);
+        resposta = JSON.stringify({ respostas: linhas.filter(l => estado.corretasTextos.includes(l[2])).map(l => l[1]) });
+      } else if (/"ordem"/.test(usuario) && estado.corretaOrdem) {
         const linhas = usuario.split('\n').map(x => x.match(/^(\d+)\) (.*)$/)).filter(Boolean);
         resposta = JSON.stringify({ ordem: estado.corretaOrdem.map(t => (linhas.find(l => l[2] === t) || [])[1]) });
       } else if (/"valor"/.test(usuario)) resposta = JSON.stringify({ valor: estado.corretaNumero });
@@ -120,7 +125,7 @@ function criarServidor() {
       const ev = JSON.parse(await lerCorpo(req) || '{}');
       ev.recebido = Date.now();
       estado.eventos.push(ev);
-      if (ev.tipo === 'mostrou') { estado.corretaAtual = ev.correta; estado.corretaTexto = ev.corretaTexto; estado.corretaNumero = ev.corretaNumero; estado.corretaOrdem = ev.corretaOrdem; }
+      if (ev.tipo === 'mostrou') { estado.corretaAtual = ev.correta; estado.corretaTexto = ev.corretaTexto; estado.corretaNumero = ev.corretaNumero; estado.corretaOrdem = ev.corretaOrdem; estado.corretasTextos = ev.corretasTextos; }
       if (ev.tipo === 'saiu') estado.corretaAtual = null;
       return json(res, 200, { ok: true });
     }
