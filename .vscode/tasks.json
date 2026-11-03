@@ -1,0 +1,88 @@
+{
+  // Ctrl+Shift+B inicia o bot. As outras tarefas: Terminal → Executar Tarefa…
+  // Usa o Node.js instalado; se não houver, baixa o Node portátil oficial (nodejs.org) para a pasta node\, sem admin.
+
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "▶ Iniciar Kahoot Bot",
+      "detail": "Abre o Chrome no Kahoot e responde sozinho",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; $n=$null; if (Get-Command node -ErrorAction SilentlyContinue) { $n='node' } elseif (Test-Path '.\\node\\node.exe') { $n='.\\node\\node.exe' } else { Write-Host 'Node.js nao encontrado neste PC. Baixando o Node portatil oficial (sem admin, so na primeira vez)...'; [Net.ServicePointManager]::SecurityProtocol='Tls12'; $b='https://nodejs.org/dist/latest-v24.x/'; $f=((Invoke-WebRequest ($b+'SHASUMS256.txt') -UseBasicParsing).Content -split [char]10 | Where-Object { $_ -match 'win-x64\\.zip' } | Select-Object -First 1).Trim().Split(' ')[-1]; $z=Join-Path $env:TEMP 'kb-node.zip'; $d=Join-Path $env:TEMP 'kb-node'; Invoke-WebRequest ($b+$f) -OutFile $z -UseBasicParsing; Expand-Archive $z $d -Force; New-Item -ItemType Directory -Force 'node' | Out-Null; Copy-Item (Get-ChildItem $d -Recurse -Filter node.exe | Select-Object -First 1).FullName 'node\\node.exe' -Force; Remove-Item $z,$d -Recurse -Force; Write-Host 'Node portatil pronto (pasta node).'; $n='.\\node\\node.exe' } & $n 'bot/bot.js'"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "clear": true,
+        "showReuseMessage": false
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "🩺 Verificar este computador",
+      "detail": "Confere Node, Chrome, internet e quais modelos do Gemini estão respondendo",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; $n=$null; if (Get-Command node -ErrorAction SilentlyContinue) { $n='node' } elseif (Test-Path '.\\node\\node.exe') { $n='.\\node\\node.exe' } else { Write-Host 'Node.js nao encontrado neste PC. Baixando o Node portatil oficial (sem admin, so na primeira vez)...'; [Net.ServicePointManager]::SecurityProtocol='Tls12'; $b='https://nodejs.org/dist/latest-v24.x/'; $f=((Invoke-WebRequest ($b+'SHASUMS256.txt') -UseBasicParsing).Content -split [char]10 | Where-Object { $_ -match 'win-x64\\.zip' } | Select-Object -First 1).Trim().Split(' ')[-1]; $z=Join-Path $env:TEMP 'kb-node.zip'; $d=Join-Path $env:TEMP 'kb-node'; Invoke-WebRequest ($b+$f) -OutFile $z -UseBasicParsing; Expand-Archive $z $d -Force; New-Item -ItemType Directory -Force 'node' | Out-Null; Copy-Item (Get-ChildItem $d -Recurse -Filter node.exe | Select-Object -First 1).FullName 'node\\node.exe' -Force; Remove-Item $z,$d -Recurse -Force; Write-Host 'Node portatil pronto (pasta node).'; $n='.\\node\\node.exe' } & $n 'bot/verificar.js'"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "clear": true,
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 Testar com o Gemini real",
+      "detail": "Mede acerto e tempo do Gemini nas 27 amostras (leva alguns minutos)",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; $n=$null; if (Get-Command node -ErrorAction SilentlyContinue) { $n='node' } elseif (Test-Path '.\\node\\node.exe') { $n='.\\node\\node.exe' } else { Write-Host 'Node.js nao encontrado neste PC. Baixando o Node portatil oficial (sem admin, so na primeira vez)...'; [Net.ServicePointManager]::SecurityProtocol='Tls12'; $b='https://nodejs.org/dist/latest-v24.x/'; $f=((Invoke-WebRequest ($b+'SHASUMS256.txt') -UseBasicParsing).Content -split [char]10 | Where-Object { $_ -match 'win-x64\\.zip' } | Select-Object -First 1).Trim().Split(' ')[-1]; $z=Join-Path $env:TEMP 'kb-node.zip'; $d=Join-Path $env:TEMP 'kb-node'; Invoke-WebRequest ($b+$f) -OutFile $z -UseBasicParsing; Expand-Archive $z $d -Force; New-Item -ItemType Directory -Force 'node' | Out-Null; Copy-Item (Get-ChildItem $d -Recurse -Filter node.exe | Select-Object -First 1).FullName 'node\\node.exe' -Force; Remove-Item $z,$d -Recurse -Force; Write-Host 'Node portatil pronto (pasta node).'; $n='.\\node\\node.exe' } & $n 'bot/testar-gemini.js'"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "clear": true,
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# nunca suba a sua chave
+chave-gemini.txt
+chave-groq.txt
+.env
+
+# histórico das partidas e resultados do teste real (ficam só no seu computador)
+resultados/
+
+# Node portátil (baixado pela tarefa de reserva)
+node/

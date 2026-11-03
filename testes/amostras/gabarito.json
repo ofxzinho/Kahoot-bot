@@ -1,0 +1,730 @@
+[
+  {
+    "id": "capital",
+    "arquivo": "capital.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "Sydney"
+      },
+      {
+        "cor": "azul",
+        "texto": "Canberra"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "Melbourne"
+      },
+      {
+        "cor": "verde",
+        "texto": "Perth"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual é a capital da Austrália?\n20",
+    "correta": "azul",
+    "respostaCorreta": "Canberra"
+  },
+  {
+    "id": "http404",
+    "arquivo": "http404.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "200"
+      },
+      {
+        "cor": "azul",
+        "texto": "301"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "404"
+      },
+      {
+        "cor": "verde",
+        "texto": "500"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual código de status HTTP indica que o recurso não foi encontrado?",
+    "correta": "amarelo",
+    "respostaCorreta": "404"
+  },
+  {
+    "id": "tres",
+    "arquivo": "tres.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "MongoDB"
+      },
+      {
+        "cor": "azul",
+        "texto": "PostgreSQL"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "Redis"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual destes é um banco de dados relacional?\n20",
+    "correta": "azul",
+    "respostaCorreta": "PostgreSQL"
+  },
+  {
+    "id": "vf",
+    "arquivo": "vf.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "verdadeiro-falso",
+    "alternativas": [
+      {
+        "cor": "azul",
+        "texto": "Verdadeiro"
+      },
+      {
+        "cor": "vermelho",
+        "texto": "Falso"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nO método HTTP GET deve ser usado para criar recursos no servidor.\n20",
+    "correta": "vermelho",
+    "respostaCorreta": "Falso"
+  },
+  {
+    "id": "vf2",
+    "arquivo": "vf2.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "verdadeiro-falso",
+    "alternativas": [
+      {
+        "cor": "azul",
+        "texto": "Verdadeiro"
+      },
+      {
+        "cor": "vermelho",
+        "texto": "Falso"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nEm Java, objetos da classe String são imutáveis.\n20",
+    "correta": "azul",
+    "respostaCorreta": "Verdadeiro"
+  },
+  {
+    "id": "grafico",
+    "arquivo": "grafico.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "grafico",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "Java"
+      },
+      {
+        "cor": "azul",
+        "texto": "Python"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "C#"
+      },
+      {
+        "cor": "verde",
+        "texto": "Go"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nNo gráfico, qual linguagem teve mais votos?\n20\n55\n92\n38\n24",
+    "correta": "azul",
+    "respostaCorreta": "Python"
+  },
+  {
+    "id": "foto",
+    "arquivo": "foto.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "foto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "Um semáforo"
+      },
+      {
+        "cor": "azul",
+        "texto": "Uma placa de PARE"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "Uma bandeira"
+      },
+      {
+        "cor": "verde",
+        "texto": "Um gramado"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nO que aparece na imagem?\n20",
+    "correta": "amarelo",
+    "respostaCorreta": "Uma bandeira"
+  },
+  {
+    "id": "tabela",
+    "arquivo": "tabela.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "tabela",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "/login"
+      },
+      {
+        "cor": "azul",
+        "texto": "/produtos"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "/carrinho"
+      },
+      {
+        "cor": "verde",
+        "texto": "/pagamento"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nPela tabela, qual endpoint tem a maior latência média?\n20\nEndpoint Latência média\n/login 120 ms\n/produtos 85 ms\n/carrinho 140 ms\n/pagamento 310 ms",
+    "correta": "verde",
+    "respostaCorreta": "/pagamento"
+  },
+  {
+    "id": "codigo",
+    "arquivo": "codigo.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "codigo",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "null"
+      },
+      {
+        "cor": "azul",
+        "texto": "undefined"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "string"
+      },
+      {
+        "cor": "verde",
+        "texto": "object"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nO que este código JavaScript imprime?\n20",
+    "correta": "verde",
+    "respostaCorreta": "object"
+  },
+  {
+    "id": "patch",
+    "arquivo": "patch.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "GET"
+      },
+      {
+        "cor": "azul",
+        "texto": "POST"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "PATCH"
+      },
+      {
+        "cor": "verde",
+        "texto": "DELETE"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual método HTTP é usado para atualizar PARCIALMENTE um recurso?\n20",
+    "correta": "amarelo",
+    "respostaCorreta": "PATCH"
+  },
+  {
+    "id": "having",
+    "arquivo": "having.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "WHERE"
+      },
+      {
+        "cor": "azul",
+        "texto": "HAVING"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "ORDER BY"
+      },
+      {
+        "cor": "verde",
+        "texto": "LIMIT"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual cláusula SQL filtra os grupos depois do GROUP BY?\n20",
+    "correta": "azul",
+    "respostaCorreta": "HAVING"
+  },
+  {
+    "id": "git",
+    "arquivo": "git.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "git branch -d"
+      },
+      {
+        "cor": "azul",
+        "texto": "git merge"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "git push -u"
+      },
+      {
+        "cor": "verde",
+        "texto": "git checkout -b"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual comando Git cria um novo branch e já muda para ele?\n20",
+    "correta": "verde",
+    "respostaCorreta": "git checkout -b"
+  },
+  {
+    "id": "docker",
+    "arquivo": "docker.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "Dockerfile"
+      },
+      {
+        "cor": "azul",
+        "texto": "package.json"
+      },
+      {
+        "cor": "amarelo",
+        "texto": ".dockerignore"
+      },
+      {
+        "cor": "verde",
+        "texto": "README.md"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual arquivo descreve, passo a passo, como construir uma imagem Docker?\n20",
+    "correta": "vermelho",
+    "respostaCorreta": "Dockerfile"
+  },
+  {
+    "id": "naoHttp",
+    "arquivo": "naoHttp.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "GET"
+      },
+      {
+        "cor": "azul",
+        "texto": "PUT"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "FETCH"
+      },
+      {
+        "cor": "verde",
+        "texto": "OPTIONS"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual destes NÃO é um método HTTP?\n20",
+    "correta": "amarelo",
+    "respostaCorreta": "FETCH"
+  },
+  {
+    "id": "busca",
+    "arquivo": "busca.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "O(log n)"
+      },
+      {
+        "cor": "azul",
+        "texto": "O(n)"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "O(n log n)"
+      },
+      {
+        "cor": "verde",
+        "texto": "O(1)"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual é a complexidade da busca binária em um vetor ordenado?\n20",
+    "correta": "vermelho",
+    "respostaCorreta": "O(log n)"
+  },
+  {
+    "id": "porcento",
+    "arquivo": "porcento.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "20"
+      },
+      {
+        "cor": "azul",
+        "texto": "25"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "35"
+      },
+      {
+        "cor": "verde",
+        "texto": "30"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQuanto é 15% de 200?",
+    "correta": "verde",
+    "respostaCorreta": "30"
+  },
+  {
+    "id": "monalisa",
+    "arquivo": "monalisa.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "Michelangelo"
+      },
+      {
+        "cor": "azul",
+        "texto": "Leonardo da Vinci"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "Rafael"
+      },
+      {
+        "cor": "verde",
+        "texto": "Van Gogh"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQuem pintou a Mona Lisa?\n20",
+    "correta": "azul",
+    "respostaCorreta": "Leonardo da Vinci"
+  },
+  {
+    "id": "independencia",
+    "arquivo": "independencia.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "1822"
+      },
+      {
+        "cor": "azul",
+        "texto": "1889"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "1500"
+      },
+      {
+        "cor": "verde",
+        "texto": "1808"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nEm que ano o Brasil declarou independência de Portugal?\n20",
+    "correta": "vermelho",
+    "respostaCorreta": "1822"
+  },
+  {
+    "id": "longo",
+    "arquivo": "longo.jpg",
+    "tela": "pc-1080p",
+    "soVisao": false,
+    "tipo": "texto-longo",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "@RestController, porque ela gerencia automaticamente a transação de cada requisição HTTP"
+      },
+      {
+        "cor": "azul",
+        "texto": "@Transactional, que abre uma transação e faz rollback em exceções não verificadas"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "@Autowired, porque a injeção de dependência garante a atomicidade das operações"
+      },
+      {
+        "cor": "verde",
+        "texto": "@Entity, já que entidades JPA são sempre persistidas de forma atômica"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nEm uma API REST construída com Spring Boot, um desenvolvedor precisa garantir que uma operação de transferência entre duas contas seja atômica, ou seja, que o débito e o crédito sejam ambos confirmados ou ambos desfeitos em caso de exceção. Qual anotação ele deve usar no método de serviço?\n20",
+    "correta": "azul",
+    "respostaCorreta": "@Transactional, que abre uma transação e faz rollback em exceções não verificadas"
+  },
+  {
+    "id": "capital-768p",
+    "arquivo": "capital-768p.jpg",
+    "tela": "notebook-768p",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "Sydney"
+      },
+      {
+        "cor": "azul",
+        "texto": "Canberra"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "Melbourne"
+      },
+      {
+        "cor": "verde",
+        "texto": "Perth"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual é a capital da Austrália?\n20",
+    "correta": "azul",
+    "respostaCorreta": "Canberra"
+  },
+  {
+    "id": "grafico-1440p",
+    "arquivo": "grafico-1440p.jpg",
+    "tela": "monitor-1440p",
+    "soVisao": false,
+    "tipo": "grafico",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "Java"
+      },
+      {
+        "cor": "azul",
+        "texto": "Python"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "C#"
+      },
+      {
+        "cor": "verde",
+        "texto": "Go"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nNo gráfico, qual linguagem teve mais votos?\n20\n55\n92\n38\n24",
+    "correta": "azul",
+    "respostaCorreta": "Python"
+  },
+  {
+    "id": "http404-celular",
+    "arquivo": "http404-celular.jpg",
+    "tela": "celular",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "200"
+      },
+      {
+        "cor": "azul",
+        "texto": "301"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "404"
+      },
+      {
+        "cor": "verde",
+        "texto": "500"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual código de status HTTP indica que o recurso não foi encontrado?",
+    "correta": "amarelo",
+    "respostaCorreta": "404"
+  },
+  {
+    "id": "patch-celular",
+    "arquivo": "patch-celular.jpg",
+    "tela": "celular",
+    "soVisao": false,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": "GET"
+      },
+      {
+        "cor": "azul",
+        "texto": "POST"
+      },
+      {
+        "cor": "amarelo",
+        "texto": "PATCH"
+      },
+      {
+        "cor": "verde",
+        "texto": "DELETE"
+      }
+    ],
+    "textoTela": "1 de 1\nKahoot simulado\nPontos: 0\nQual método HTTP é usado para atualizar PARCIALMENTE um recurso?",
+    "correta": "amarelo",
+    "respostaCorreta": "PATCH"
+  },
+  {
+    "id": "porcento-so-visao",
+    "arquivo": "porcento-so-visao.jpg",
+    "tela": "pc-1080p",
+    "soVisao": true,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": ""
+      },
+      {
+        "cor": "azul",
+        "texto": ""
+      },
+      {
+        "cor": "amarelo",
+        "texto": ""
+      },
+      {
+        "cor": "verde",
+        "texto": ""
+      }
+    ],
+    "textoTela": "",
+    "correta": "verde",
+    "respostaCorreta": "30"
+  },
+  {
+    "id": "naoHttp-so-visao",
+    "arquivo": "naoHttp-so-visao.jpg",
+    "tela": "pc-1080p",
+    "soVisao": true,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": ""
+      },
+      {
+        "cor": "azul",
+        "texto": ""
+      },
+      {
+        "cor": "amarelo",
+        "texto": ""
+      },
+      {
+        "cor": "verde",
+        "texto": ""
+      }
+    ],
+    "textoTela": "",
+    "correta": "amarelo",
+    "respostaCorreta": "FETCH"
+  },
+  {
+    "id": "vf2-so-visao",
+    "arquivo": "vf2-so-visao.jpg",
+    "tela": "pc-1080p",
+    "soVisao": true,
+    "tipo": "verdadeiro-falso",
+    "alternativas": [
+      {
+        "cor": "azul",
+        "texto": ""
+      },
+      {
+        "cor": "vermelho",
+        "texto": ""
+      }
+    ],
+    "textoTela": "",
+    "correta": "azul",
+    "respostaCorreta": "Verdadeiro"
+  },
+  {
+    "id": "git-so-visao",
+    "arquivo": "git-so-visao.jpg",
+    "tela": "pc-1080p",
+    "soVisao": true,
+    "tipo": "texto",
+    "alternativas": [
+      {
+        "cor": "vermelho",
+        "texto": ""
+      },
+      {
+        "cor": "azul",
+        "texto": ""
+      },
+      {
+        "cor": "amarelo",
+        "texto": ""
+      },
+      {
+        "cor": "verde",
+        "texto": ""
+      }
+    ],
+    "textoTela": "",
+    "correta": "verde",
+    "respostaCorreta": "git checkout -b"
+  }
+]
