@@ -39,8 +39,6 @@
 
 Abre um Chrome controlado no Kahoot, lê a pergunta e as alternativas direto da página, manda o print + o texto para o Google Gemini e **clica sozinho** na resposta. Roda dentro do VS Code, **sem admin**. Se o PC não tiver Node.js, o bot baixa o Node portátil oficial sozinho na primeira vez.
 
-> ⚠️ Para jogos de brincadeira/estudo. Em atividade que vale nota é trapaça, e o uso viola os termos do Kahoot.
-
 ---
 
 ## Como usar
