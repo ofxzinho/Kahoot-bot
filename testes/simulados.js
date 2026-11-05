@@ -142,7 +142,7 @@ async function rodarCaso(srv, porta, rt, caso) {
         cliques: cl.length, acertos: cl.filter(c => c.acertou).length,
         msClique: cl.map(c => c.ms), msIA: r.historico.filter(h => h.ok).map(h => h.msIA),
         modelos: r.historico.filter(h => h.ok).map(h => h.modelo), chamadasIA: pedidos(r).length,
-        print: pedidos(r)[0] && pedidos(r)[0].dimImagem, erros: r.historico.filter(h => !h.ok).map(h => h.erro.slice(0, 90)),
+        print: pedidos(r)[0] && pedidos(r)[0].dimImagem, erros: r.historico.filter(h => !h.ok && h.erro).map(h => h.erro.slice(0, 90)),
       };
       res.casos.push(linha);
       console.log(`${linha.ok ? 'PASSOU' : 'FALHOU'}  [${caso.g}] ${caso.n}  ${linha.msClique.length ? '· clique em ' + linha.msClique.join('/') + ' ms' : ''}${linha.falhas.length ? '  → ' + linha.falhas.join('; ') : ''}`);

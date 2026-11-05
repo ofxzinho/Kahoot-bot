@@ -94,4 +94,24 @@ async function obterChaves() {
   return { groq, gemini };
 }
 
-module.exports = { RAIZ, ARQ_CHAVE, ARQ_CHAVE_GROQ, PADRAO, lerConfig, obterChave, obterChaves, obterChaveGroq, limparChave };
+// ---- usado pelo painel
+function chavesSalvas() { return { groq: obterChaveGroq(), gemini: chaveGeminiSalva() }; }
+function salvarChave(provedor, chave) { fs.writeFileSync(provedor === 'groq' ? ARQ_CHAVE_GROQ : ARQ_CHAVE, chave + '\n'); }
+function apagarChaves() { for (const a of [ARQ_CHAVE, ARQ_CHAVE_GROQ]) { try { fs.unlinkSync(a); } catch (_) {} } }
+
+// Confere a chave listando os modelos (não gasta cota de geração).
+async function testarChave(provedor, chave, cfg) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const r = provedor === 'groq'
+      ? await fetch(`${(cfg && cfg.groqBase) || 'https://api.groq.com/openai/v1'}/models`, { headers: { Authorization: `Bearer ${chave}` }, signal: ctl.signal })
+      : await fetch(`${(cfg && cfg.apiBase) || 'https://generativelanguage.googleapis.com'}/v1beta/models?pageSize=1`, { headers: { 'x-goog-api-key': chave }, signal: ctl.signal });
+    if (r.ok) return { ok: true };
+    if ([400, 401, 403].includes(r.status)) return { ok: false, invalida: true, erro: 'chave inválida ou sem permissão' };
+    return { ok: true, msg: `aceita (o servidor respondeu ${r.status}; confirma na 1ª pergunta)` };
+  } catch (e) {
+    return { ok: true, msg: 'aceita sem testar (sem internet até o servidor agora)' };
+  } finally { clearTimeout(t); }
+}
+
+module.exports = { RAIZ, ARQ_CHAVE, ARQ_CHAVE_GROQ, PADRAO, lerConfig, obterChave, obterChaves, obterChaveGroq, limparChave, chavesSalvas, salvarChave, apagarChaves, testarChave };

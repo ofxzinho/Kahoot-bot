@@ -1,0 +1,7 @@
+{
+  "name": "kahoot-bot",
+  "version": "3.18.0",
+  "private": true,
+  "description": "Bot de Kahoot (Chrome via CDP + Groq/Gemini + OCR local)",
+  "scripts": { "start": "node bot/bot.js", "verificar": "node bot/verificar.js", "testes": "node testes/unitarios.test.js" }
+}

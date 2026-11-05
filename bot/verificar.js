@@ -1,4 +1,4 @@
-// bot/verificar.js — confere se ESTE computador consegue rodar o bot (rode na faculdade antes do jogo).
+// bot/verificar.js — confere se ESTE computador consegue rodar o bot
 // Testa: runtime Node, módulos usados, Chrome/Edge com controle remoto liberado, acesso à API do Gemini e a chave.
 'use strict';
 const fs = require('fs');
@@ -104,6 +104,7 @@ async function comTempo(ms, p) {
 
   console.log('');
   if (falhas.length) console.log(`${VERM}${NEG}${falhas.length} problema(s) encontrado(s).${R} Veja as dicas acima.\n`);
-  else console.log(`${VERDE}${NEG}Tudo certo!${R} Pode iniciar o bot (Ctrl+Shift+B).\n`);
+  else console.log(`${VERDE}${NEG}Tudo certo!${R} Pode iniciar o bot (KahootBot.exe ou Ctrl+Shift+B).\n`);
   process.exitCode = falhas.length ? 1 : 0;
+  if (process.env.KB_EXE && process.stdin.isTTY) { console.log('Aperte Enter para fechar.'); process.stdin.resume(); process.stdin.once('data', () => process.stdin.pause()); }
 })();

@@ -1,18 +1,20 @@
 // bot/bot.js — abre um Chrome (ou Edge) controlado e responde o Kahoot sozinho.
-// No VS Code: Ctrl+Shift+B (roda no Node embutido do próprio VS Code). Fora dele: `node bot/bot.js`.
+// Jeitos de rodar: KahootBot.exe (duplo clique), Ctrl+Shift+B no VS Code, ou `node bot/bot.js`.
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const { CDP } = require('./cdp');
 const { acharNavegador, abrirNavegador } = require('./navegador');
-const { RAIZ, lerConfig, obterChaves } = require('./config');
+const { RAIZ, lerConfig, obterChaves, chavesSalvas, salvarChave, apagarChaves, testarChave, limparChave } = require('./config');
+const { iniciarPainel } = require('./painel');
 const G = require('../nucleo/gemini');
 const OCR = require('./ocr');
 
 const COR_TERM = { vermelho: '\x1b[41m', azul: '\x1b[44m', amarelo: '\x1b[43m\x1b[30m', verde: '\x1b[42m' };
 const R = '\x1b[0m', CINZA = '\x1b[90m', VERDE = '\x1b[32m', VERM = '\x1b[31m', NEG = '\x1b[1m';
 const hora = () => new Date().toLocaleTimeString('pt-BR');
-const log = (...a) => console.log(`${CINZA}${hora()}${R}`, ...a);
+let painel = null;
+const log = (...a) => { console.log(`${CINZA}${hora()}${R}`, ...a); if (painel) painel.log(`${hora()}  ${a.join(' ')}`); };
 
 // ------------------------------------------------------------------ código injetado na página
 function montarPacote(cfg) {
@@ -48,23 +50,70 @@ async function principal() {
     throw new Error(`Este runtime (${rt}) é antigo demais: precisa de Node 18+. Atualize o VS Code ou use o Node portátil (veja o README).`);
   }
   log(`Runtime: ${rt}`);
-  const { gemini: chave, groq: chaveGroq } = await obterChaves();
-  log(chaveGroq ? `Groq: ok (…${chaveGroq.slice(-4)}) — perguntas de texto vão pela Groq` : `${CINZA}Groq: sem chave (perguntas de texto vão pelo Gemini, mais lento)${R}`);
-  log(chave ? `Gemini: ok (…${chave.slice(-4)}) — usado em perguntas com imagem` : `${CINZA}Gemini: sem chave (perguntas com imagem vão pela Groq, só pelo texto)${R}`);
+  // Chaves: arquivo/variável; sem elas, o painel pede (ou o terminal, com KB_TERMINAL=1).
+  let { gemini: chave, groq: chaveGroq } = chavesSalvas();
+  if (process.env.KB_TERMINAL && !chave && !chaveGroq) ({ gemini: chave, groq: chaveGroq } = await obterChaves());
+  if (!chave && !chaveGroq && process.env.KB_SEM_PERGUNTA) throw new Error('Nenhuma chave encontrada (chave-groq.txt / chave-gemini.txt).');
 
   const exe = acharNavegador(cfg.navegador);
   if (!exe) throw new Error('Não achei Chrome nem Edge. Coloque o caminho do executável em "navegador" no config.json.');
   log(`Navegador: ${exe}`);
 
-  const gerente = G.criarGerenciador(Object.assign({}, cfg, { chave, chaves: { groq: chaveGroq } }));
-  log(`Modelos (ordem de preferência): ${gerente.saude.map(s => s.modelo).join(', ')}`);
+  let gerente = null, aquecimento = Promise.resolve(null);
+  const placar = { corretas: 0, incorretas: 0, respondidas: 0, tempos: [] };
+  const estadoPainel = (extra) => {
+    if (!painel) return;
+    const ts = placar.tempos.slice().sort((a, b) => a - b);
+    painel.atualizar(Object.assign({
+      temChave: !!gerente, ativo, chaves: { groq: chaveGroq ? chaveGroq.slice(-4) : '', gemini: chave ? chave.slice(-4) : '' },
+      placar: { corretas: placar.corretas, incorretas: placar.incorretas, respondidas: placar.respondidas, mediaMs: ts.length ? ts[ts.length >> 1] : 0 },
+    }, extra || {}));
+  };
   const mostrarSaude = (r) => {
     for (const m of r.modelos) log(m.ok ? `${VERDE}✓${R} ${m.modelo} respondeu em ${m.ms} ms` : `${VERM}✗ ${m.modelo}: ${m.erro}${R}`);
     if (r.preciso) log(`Usando: ${NEG}${r.preciso}${R}${r.rapido ? ` + ${r.rapido} (corrida)` : ` (se demorar mais de ${(cfg.reforcoMs || 2500) / 1000} s, chama o próximo em paralelo)`}`);
     else log(`${VERM}Nenhum modelo respondeu. O bot vai continuar tentando.${R}`);
   };
-  // aquece o Gemini enquanto o navegador abre (valida chave/modelos, mede o tempo e abre a conexão)
-  const aquecimento = gerente.aquecer().then((r) => { mostrarSaude(r); return r; });
+  // (re)cria o gerenciador de IA com as chaves atuais e aquece enquanto o resto abre
+  function configurarIA() {
+    log(chaveGroq ? `Groq: ok (…${chaveGroq.slice(-4)}) — perguntas de texto vão pela Groq` : `${CINZA}Groq: sem chave (perguntas de texto vão pelo Gemini, mais lento)${R}`);
+    log(chave ? `Gemini: ok (…${chave.slice(-4)}) — usado em perguntas com imagem` : `${CINZA}Gemini: sem chave (perguntas com imagem vão pela Groq, só pelo texto)${R}`);
+    gerente = G.criarGerenciador(Object.assign({}, cfg, { chave, chaves: { groq: chaveGroq } }));
+    log(`Modelos (ordem de preferência): ${gerente.saude.map(s => s.modelo).join(', ')}`);
+    aquecimento = gerente.aquecer().then((r) => { mostrarSaude(r); estadoPainel({ modelos: r.preciso ? r.preciso : 'nenhum modelo respondeu ainda' }); return r; });
+    estadoPainel({ modelos: gerente.saude.map(s => s.modelo).join(' → ') });
+  }
+  let ativo = true;
+  if (!process.env.KB_SEM_PAINEL) {
+    try {
+      painel = await iniciarPainel({
+        chaves: async (d) => {
+          const r = {}; let mudou = false;
+          for (const prov of ['groq', 'gemini']) {
+            const c = limparChave(d[prov]); if (!c) continue;
+            r[prov] = await testarChave(prov, c, cfg);
+            if (!r[prov].ok) continue;
+            if (prov === 'groq') chaveGroq = c; else chave = c;
+            mudou = true;
+            if (d.lembrar) { try { salvarChave(prov, c); r[prov].msg = (r[prov].msg || 'funcionando') + ' · salva neste PC'; } catch (e) { r[prov].msg = `funcionando (não salvou: ${e.message})`; } }
+          }
+          if (!r.groq && !r.gemini) return { ok: false, erro: 'cole pelo menos uma chave' };
+          if (mudou) {
+            const primeira = !gerente;
+            configurarIA();
+            for (const s of sessoes.keys()) avisarConfig(s);
+            if (primeira) abrirKahoot().catch(() => {});
+          }
+          return r;
+        },
+        esquecer: async () => { apagarChaves(); return { ok: true, msg: 'arquivos de chave apagados (continuam valendo até fechar o bot)' }; },
+        alternar: async () => { alternar(); return { ativo }; },
+        kahoot: async () => { await abrirKahoot(); return { ok: true }; },
+      });
+    } catch (e) { log(`${VERM}Painel não abriu: ${e.message}${R}`); }
+  }
+  if (chave || chaveGroq) configurarIA();
+  else { log(`${NEG}Falta a chave da IA:${R} cole no painel que abriu no navegador.`); estadoPainel(); }
 
   // OCR local (lê código/texto das imagens sem depender do Gemini) — carrega em segundo plano
   const tOcr = Date.now();
@@ -75,7 +124,7 @@ async function principal() {
   const cdp = await CDP.conectar(url);
   const pacote = montarPacote(cfg);
   const sessoes = new Map(); // sessionId -> {targetId}
-  let ativo = true, infoMostrada = false;
+  let infoMostrada = false;
   const historico = [];
   const dirResult = process.env.KB_RESULTADOS || path.join(RAIZ, 'resultados');
   const arqHist = path.join(dirResult, `historico-${new Date().toISOString().slice(0, 10)}.jsonl`);
@@ -97,17 +146,23 @@ async function principal() {
     return { ok: true, base64: r.data };
   }
 
+  function alternar(origem) {
+    ativo = !ativo;
+    log(ativo ? `${VERDE}▶ Bot retomado${R}` : '⏸ Bot pausado (Alt+Shift+K ou o painel retomam)');
+    for (const s of sessoes.keys()) if (s !== origem) avisarConfig(s);
+    estadoPainel();
+  }
+
   async function tratar(sessionId, tipo, dados) {
     if (process.env.KB_DEBUG) log(`${CINZA}[ponte] ${tipo}${R}`);
+    if (!gerente && /^responder/.test(tipo)) return { ok: false, erro: 'falta a chave da IA (cole no painel)' };
     switch (tipo) {
       case 'config':
-        return { ativo, cliqueAutomatico: cfg.cliqueAutomatico, mostrarOverlay: cfg.mostrarOverlay, temChave: true };
+        return { ativo, cliqueAutomatico: cfg.cliqueAutomatico, mostrarOverlay: cfg.mostrarOverlay, temChave: !!gerente };
       case 'aquecer':
         return aquecimento;
       case 'alternar':
-        ativo = !ativo;
-        log(ativo ? `${VERDE}▶ Bot retomado${R}` : '⏸ Bot pausado (Alt+Shift+K para retomar)');
-        for (const s of sessoes.keys()) if (s !== sessionId) avisarConfig(s);
+        alternar(sessionId);
         return { ativo };
       case 'capturar':
         return capturar(sessionId, dados);
@@ -206,6 +261,7 @@ async function principal() {
       case 'registrar': {
         const d = dados || {};
         historico.push(d);
+        if (d.ok) { placar.respondidas++; if (d.msTotal) placar.tempos.push(d.msTotal); estadoPainel(); }
         const perg = (d.pergunta || '').slice(0, 70);
         if (d.ok && d.ordem) {
           log(`${NEG}ordem → ${d.ordem.join(' · ').slice(0, 120)}${R} ${NEG}${(d.msTotal / 1000).toFixed(2)}s${R} ${CINZA}(IA ${d.msIA} ms, ${d.modelo}${d.conferido ? '' : ', ⚠ ordem final diferente'})${R}`);
@@ -230,6 +286,8 @@ async function principal() {
         const marca = v === 'correto' ? `${VERDE}✓ Kahoot: CORRETO${R}` : v === 'incorreto' ? `${VERM}✗ Kahoot: INCORRETO${R}` : `${CINZA}Kahoot: ${v}${R}`;
         log(`   ${marca} ${CINZA}(${(dados.pergunta || '').slice(0, 50)} → ${(dados.escolha || '').slice(0, 40)})${R}`);
         historico.push({ veredito: v, pergunta: dados.pergunta, escolha: dados.escolha });
+        if (v === 'correto') placar.corretas++; else if (v === 'incorreto') placar.incorretas++;
+        estadoPainel();
         try { fs.mkdirSync(dirResult, { recursive: true }); fs.appendFileSync(arqHist, JSON.stringify({ veredito: v, pergunta: dados.pergunta, escolha: dados.escolha }) + '\n'); } catch (_) {}
         return { ok: true };
       }
@@ -295,13 +353,33 @@ async function principal() {
   paginas.slice(1).forEach(t => anexar(t.targetId));
   const primeira = paginas[0] && await anexar(paginas[0].targetId);
   if (process.env.KB_DEBUG) log(`${CINZA}aba preparada em ${Date.now() - tA} ms (${paginas.length} abas)${R}`);
+  // Aba do Kahoot: preparada (agente injetado) ANTES de navegar, senão o agente perde o 1º carregamento.
+  let abaKahoot = null;
+  async function abrirKahoot() {
+    if (abaKahoot) {
+      const { targetInfos: ts } = await cdp.enviar('Target.getTargets');
+      if (ts.some(t => t.targetId === abaKahoot)) { await cdp.enviar('Target.activateTarget', { targetId: abaKahoot }); return; }
+    }
+    const { targetId } = await cdp.enviar('Target.createTarget', { url: 'about:blank' });
+    abaKahoot = targetId;
+    const s = await anexar(targetId);
+    if (s) { await cdp.enviar('Page.navigate', { url: cfg.urlInicial }, s); await cdp.enviar('Target.activateTarget', { targetId }).catch(() => {}); }
+  }
   if (primeira) {
+    const comPainel = painel && !process.env.KB_HEADLESS;
     await cdp.enviar('Page.bringToFront', {}, primeira).catch(() => {});
-    await cdp.enviar('Page.navigate', { url: cfg.urlInicial }, primeira);
+    if (comPainel && !gerente) {
+      await cdp.enviar('Page.navigate', { url: painel.url }, primeira);      // sem chave: começa pelo painel
+    } else {
+      abaKahoot = paginas[0].targetId;
+      await cdp.enviar('Page.navigate', { url: cfg.urlInicial }, primeira);
+      if (comPainel) cdp.enviar('Target.createTarget', { url: painel.url, background: true }).catch(() => {});
+    }
   }
   if (process.env.KB_DEBUG) log(`${CINZA}navegou em ${Date.now() - tA} ms${R}`);
 
-  log(`${VERDE}Pronto!${R} Entre no jogo pela janela que abriu. ${CINZA}(Alt+Shift+K pausa · Ctrl+C aqui encerra)${R}`);
+  if (gerente) log(`${VERDE}Pronto!${R} Entre no jogo pela janela que abriu. ${CINZA}(Alt+Shift+K pausa · painel na outra aba · Ctrl+C aqui encerra)${R}`);
+  if (painel) log(`${CINZA}Painel: ${painel.url}${R}`);
 
   let saindo = false;
   const sair = (codigo) => {
@@ -314,7 +392,7 @@ async function principal() {
       log(`Resumo: ${ok.length} respondidas · mediana ${(ts[ts.length >> 1] / 1000).toFixed(2)}s · pior ${(ts[ts.length - 1] / 1000).toFixed(2)}s · histórico em resultados/`);
     }
     OCR.encerrar();
-    const fim = () => { try { fs.rmSync(perfil, { recursive: true, force: true }); } catch (_) {} process.exitCode = codigo; setTimeout(() => process.exit(codigo), 300).unref(); };
+    const fim = () => { try { fs.rmSync(perfil, { recursive: true, force: true }); } catch (_) {} process.exitCode = codigo; setTimeout(() => process.exit(codigo), process.env.KB_EXE ? 3000 : 300).unref(); };
     if (proc.exitCode !== null) return fim();
     proc.once('exit', () => setTimeout(fim, 200));
     cdp.enviar('Browser.close').catch(() => {});
@@ -328,5 +406,8 @@ async function principal() {
 
 principal().catch((e) => {
   console.error(`\n${VERM}✗ ${e.message}${R}\n`);
-  process.exit(1);
+  if (process.env.KB_EXE && process.stdin.isTTY) {          // no .exe a janela fecharia sem dar tempo de ler o erro
+    console.log('Aperte Enter para fechar.');
+    process.stdin.resume(); process.stdin.once('data', () => process.exit(1));
+  } else process.exit(1);
 });

@@ -637,7 +637,7 @@
           }
           const alts = await escanear();
           if (alts.length >= 2) {
-            if (!est.cfg.temChave) { overlay('Falta a chave do Gemini', 'configure e recarregue', '#c0392b'); return; }
+            if (!est.cfg.temChave) { overlay('Falta a chave da IA', 'cole no painel do bot', '#c0392b'); return; }
             try { await responder(alts, t0); }
             catch (e) {                                              // nunca deixa o bot travado no meio de uma pergunta
               dbg('erro inesperado', e && e.message);
@@ -704,7 +704,7 @@
     }
     function mostrarStatus() {
       if (!est.cfg.ativo) overlay('Pausado', 'Alt+Shift+K para retomar', '#888');
-      else if (!est.cfg.temChave) overlay('Falta a chave do Gemini', '', '#c0392b');
+      else if (!est.cfg.temChave) overlay('Falta a chave da IA', 'cole no painel do bot', '#c0392b');
     }
 
     (async () => {
@@ -731,7 +731,10 @@
           else overlay('Problema com o Gemini', (a && a.modelos || []).filter(m => !m.ok).map(m => `${m.modelo}: ${m.erro}`).join(' | ') || (a && a.erro) || '', '#c0392b');
         }).catch((e) => { if (est.fase === 'ocioso') overlay('Problema com o Gemini', String(e.message || e), '#c0392b'); });
       }
-      if (ponte.aoMudarConfig) ponte.aoMudarConfig(async () => { await carregarConfig(); mostrarStatus(); });
+      if (ponte.aoMudarConfig) ponte.aoMudarConfig(async () => {
+        await carregarConfig();
+        if (est.cfg.ativo && est.cfg.temChave) { if (est.fase === 'ocioso') overlay('Pronto — aguardando pergunta', '', '#2ecc71'); } else mostrarStatus();
+      });
       addEventListener('keydown', (e) => {
         if (e.altKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
           ponte.pedir('alternar').then(async () => { await carregarConfig(); if (est.cfg.ativo) overlay('Ativo', 'aguardando pergunta', '#2ecc71'); else mostrarStatus(); }).catch(() => {});
